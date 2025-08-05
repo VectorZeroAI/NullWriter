@@ -12,7 +12,7 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+API_URL = "https://openrouter.ai/meta-llama/llama-4-maverick%3Afree"
 
 # ChatGPT said: "May your code be elegant, your bugs be few, and your creativity boundless."
 
