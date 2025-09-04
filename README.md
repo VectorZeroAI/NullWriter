@@ -1,4 +1,4 @@
-# ZeroWriter
+# NullWriter
 A Autonomus self-checking AI powered novel writer.
 
 #Architecture:
