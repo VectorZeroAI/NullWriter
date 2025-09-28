@@ -1,27 +1,30 @@
 # config.py
+"""
+Hello DEAR USER!
+YOU HAVE TO INSERT YOUR API KEY INTO THE CORRESPODING FIELD!
+"""
 
-# 🚨 Insert your OpenRouter API key here
+#INSERT YOUR API KEYS HERE
 OPENROUTER_API_KEY = "your-api-key"
+#INSERT YOUR API KEYS HERE
+#INSERT YOUR API KEYS HERE
 
-# ===============================
-# ZeroWriter: Model Assignments
-# ===============================
 
-# Step 1: High-Level Novel Plan
-HIGH_LEVEL_MODEL = "meta-llama/llama-3.1-405b-instruct:free"
 
-# Step 2: Chapter Plan
-CHAPTER_PLAN_MODEL = "mistralai/mistral-small-3.1-24b-instruct:free"
 
-# Step 3: Draft Generation (Parallel Threads)
+#Dont touch these unless you know whatch ya doing.
+#Dont touch these unless you know whatch ya doing.
+#Dont touch these unless you know whatch ya doing.
+HIGH_LEVEL_MODEL = "openai/gpt-oss-120b:free"
+
+CHAPTER_PLAN_MODEL = "openai/gpt-oss-20b:free"
+
 DRAFT_MODELS = [
-    "deepseek/deepseek-chat-v3-0324:free",     # narrative / dialogue-rich
-    "qwen/qwen3-30b-a3b:free",                   # structured / coherent logic
-    "tngtech/deepseek-r1t2-chimera:free"       # speed + hybrid output
+    "deepseek/deepseek-chat-v3-0324:free",
+    "qwen/qwen3-30b-a3b:free",
+    "tngtech/deepseek-r1t2-chimera:free"
 ]
 
-# Step 4: Comparison & Synthesis of Best Plan
 COMPARISON_MODEL = "tngtech/deepseek-r1t2-chimera:free"
 
-# Step 5: Final Chapter Writer
 FINAL_MODEL = "deepseek/deepseek-r1-0528:free"
