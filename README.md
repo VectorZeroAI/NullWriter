@@ -42,6 +42,7 @@ First, create this json:
       "draft": "the draft here"
     }
   ]
+  "draft_comparason": "",
   "final": "chapter text",
   "user_instructions": "instruction list, e.g. the prompt"
   
