@@ -54,7 +54,10 @@ Then we call the first LLM to create the high level descriptions for the story, 
 Then we call an LLM o create characters for the story, and append them into the json list. 
 Then we call an LLM to create the story plan. 
 Then we call 3 LLMs asyncronosly to create the actual story. 
+Then we call an LLM to compare all the drafts.
 Then we call the final LLM to finaly create the final story.
+
+*Note that every new bit of information is passed onto the next model as well, meaning that something like user instructions gets passed on to every LLM call.*
 
 
 We wrap it all into a tinkerer GUI with 2 text fields and a start button, and thats it.
