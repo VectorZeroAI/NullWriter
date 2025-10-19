@@ -4,8 +4,8 @@ import json
 import asyncio
 import threading
 from openai import OpenAI
-from config import OPENROUTER_API_KEY
 import os
+import config
 
 class StoryGenerator:
     def __init__(self):
@@ -14,6 +14,7 @@ class StoryGenerator:
             "characters": [],
             "story_plan": "",
             "drafts": [],
+            "draft_comparison": "",  # New field for comparison analysis
             "final": "",
             "user_instructions": ""
         }
@@ -21,10 +22,10 @@ class StoryGenerator:
         # Initialize OpenRouter client
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=OPENROUTER_API_KEY
+            api_key=config.OPENROUTER_API_KEY
         )
 
-    def call_llm(self, prompt, model="openai/gpt-oss-20b:free"):
+    def call_llm(self, prompt, model="anthropic/claude-3-sonnet"):
         """Make API call to OpenRouter"""
         try:
             completion = self.client.chat.completions.create(
@@ -40,106 +41,165 @@ class StoryGenerator:
         prompt = f"""
         Based on the following user instructions, create a compelling high-level description for a short story:
         
-        User Instructions: {user_instructions}
+        USER INSTRUCTIONS: {user_instructions}
         
         Provide a concise but vivid description that sets the tone, setting, and main conflict.
+        Keep the user's original vision clearly in mind while creating this description.
+        
+        High-level description:
         """
-        return self.call_llm(prompt)
+        return self.call_llm(prompt, config.MODELS["high_level"])
 
-    def generate_characters(self, high_level_description):
+    def generate_characters(self, user_instructions, high_level_description):
         """Generate characters for the story"""
         prompt = f"""
-        Based on this story description: {high_level_description}
+        Based on these story elements, create 2-3 main characters for this story:
         
-        Create 2-3 main characters for this story. For each character provide:
+        USER INSTRUCTIONS: {user_instructions}
+        STORY DESCRIPTION: {high_level_description}
+        
+        For each character provide:
         - Name
-        - Description
-        - Character traits
+        - Description (appearance, background, role)
+        - Character traits (personality, motivations, flaws)
         
+        Ensure the characters align with the user's original instructions.
         Format your response as a JSON-like structure that can be parsed.
+        
+        Characters:
         """
-        response = self.call_llm(prompt)
+        response = self.call_llm(prompt, config.MODELS["characters"])
         return response
 
-    def generate_story_plan(self, high_level_description, characters):
+    def generate_story_plan(self, user_instructions, high_level_description, characters):
         """Generate a detailed story plan"""
         prompt = f"""
-        Story Description: {high_level_description}
-        Characters: {characters}
+        Create a detailed story plan based on these elements:
+        
+        USER INSTRUCTIONS: {user_instructions}
+        STORY DESCRIPTION: {high_level_description}
+        CHARACTERS: {characters}
         
         Create a detailed story plan with:
-        1. Beginning (setup)
-        2. Middle (conflict development)
-        3. End (resolution)
+        1. Beginning (setup, character introduction, initial situation)
+        2. Middle (conflict development, character challenges, rising action)
+        3. End (climax, resolution, character growth)
         
+        Make sure the plan stays true to the user's original instructions.
         Make it detailed enough to guide the writing of a compelling short story.
+        
+        Story Plan:
         """
-        return self.call_llm(prompt)
+        return self.call_llm(prompt, config.MODELS["story_plan"])
 
-    def generate_draft(self, story_data, model):
+    def generate_draft(self, user_instructions, story_data, model):
         """Generate a single story draft"""
         prompt = f"""
-        Write a complete short story based on the following:
+        Write a complete short story based on the following elements:
         
-        Story Description: {story_data['high_level_description']}
-        Characters: {story_data['characters']}
-        Story Plan: {story_data['story_plan']}
-        User Instructions: {story_data['user_instructions']}
+        ORIGINAL USER INSTRUCTIONS: {user_instructions}
+        STORY DESCRIPTION: {story_data['high_level_description']}
+        CHARACTERS: {story_data['characters']}
+        STORY PLAN: {story_data['story_plan']}
         
-        Write a compelling, complete short story that follows the plan and develops the characters.
-        Keep it between 500-800 words.
+        Important: Stay faithful to the user's original instructions above.
+        
+        Write a compelling, complete short story that:
+        - Follows the story plan
+        - Develops the characters according to their descriptions
+        - Maintains consistency with the high-level description
+        - Adheres to the user's original vision
+        - Is between 500-800 words
+        
+        Short Story:
         """
         draft = self.call_llm(prompt, model)
         return {"model": model, "draft": draft}
 
-    async def generate_drafts_async(self, story_data):
+    async def generate_drafts_async(self, user_instructions, story_data):
         """Generate multiple drafts asynchronously"""
-        models = [
-            "anthropic/claude-3-sonnet",
-            "google/gemini-pro",
-            "meta-llama/llama-3-70b-instruct"
-        ]
         
         # Run draft generation concurrently
         loop = asyncio.get_event_loop()
         tasks = []
-        for model in models:
-            task = loop.run_in_executor(None, self.generate_draft, story_data, model)
+        for model in config.MODELS["drafts"]:
+            task = loop.run_in_executor(None, self.generate_draft, user_instructions, story_data, model)
             tasks.append(task)
         
         drafts = await asyncio.gather(*tasks)
         return drafts
 
-    def generate_final_story(self, story_data):
-        """Generate the final story by synthesizing the best drafts"""
+    def generate_draft_comparison(self, user_instructions, story_data):
+        """Generate a detailed comparison analysis of all drafts"""
+        drafts_text = "\n\n---\n\n".join([
+            f"DRAFT FROM {draft['model']}:\n{draft['draft']}" 
+            for draft in story_data['drafts']
+        ])
+        
+        prompt = f"""
+        ANALYZE AND COMPARE multiple story drafts to identify their strengths and weaknesses.
+        
+        ORIGINAL USER INSTRUCTIONS: {user_instructions}
+        STORY PLAN: {story_data['story_plan']}
+        CHARACTERS: {story_data['characters']}
+        
+        DRAFTS TO COMPARE:
+        {drafts_text}
+        
+        Please provide a detailed comparative analysis covering:
+        
+        1. **ADHERENCE TO VISION**: How well does each draft follow the original user instructions?
+        2. **CHARACTER DEVELOPMENT**: Which drafts have the most compelling character arcs?
+        3. **PLOT STRUCTURE**: How well does each draft follow the story plan? Any notable deviations?
+        4. **WRITING QUALITY**: Assess prose style, dialogue, descriptive language in each draft.
+        5. **EMOTIONAL IMPACT**: Which drafts are most engaging and emotionally resonant?
+        6. **STRENGTHS OF EACH DRAFT**: Specific elements worth preserving from each version.
+        7. **WEAKNESSES OF EACH DRAFT**: Areas where each draft falls short.
+        8. **SPECIFIC RECOMMENDATIONS**: Concrete suggestions for the final synthesis.
+        
+        Focus on identifying the BEST elements from EACH draft that should be combined in the final version.
+        
+        Comparative Analysis:
+        """
+        return self.call_llm(prompt, config.MODELS["comparison"])
+
+    def generate_final_story(self, user_instructions, story_data, comparison_analysis):
+        """Generate the final story using the comparison analysis for enhanced context"""
         drafts_text = "\n\n".join([f"Draft from {draft['model']}:\n{draft['draft']}" 
                                  for draft in story_data['drafts']])
         
         prompt = f"""
-        You have been given multiple drafts of the same story. Synthesize the best elements 
-        from all drafts to create a final, polished version.
+        SYNTHESIZE A FINAL STORY by combining the best elements from multiple drafts, guided by expert analysis.
         
-        Original Instructions: {story_data['user_instructions']}
-        Story Plan: {story_data['story_plan']}
-        Characters: {story_data['characters']}
+        ORIGINAL USER INSTRUCTIONS: {user_instructions}
+        STORY PLAN: {story_data['story_plan']}
+        CHARACTERS: {story_data['characters']}
         
-        Here are the drafts:
+        EXPERT COMPARATIVE ANALYSIS OF DRAFTS:
+        {comparison_analysis}
+        
+        AVAILABLE DRAFTS:
         {drafts_text}
         
-        Create a final version that:
-        1. Maintains the original vision and instructions
-        2. Incorporates the best writing from all drafts
-        3. Has consistent characterization
-        4. Flows smoothly from beginning to end
-        5. Is between 600-900 words
+        Using the detailed comparative analysis above, create a final version that:
         
-        Write the final story:
+        1. **PRIORITIZE BEST ELEMENTS**: Use the analysis to identify and incorporate the strongest elements from each draft
+        2. **FOLLOW USER VISION**: Faithfully adhere to the original user instructions
+        3. **MAINTAIN CONSISTENCY**: Ensure character consistency and plot coherence
+        4. **ENHANCE QUALITY**: Improve upon the weaknesses identified in the analysis
+        5. **BALANCE STYLES**: Blend the best writing styles and techniques from different drafts
+        6. **STRONG OPENING**: Use the most engaging opening from any draft
+        7. **SATISFYING ENDING**: Use the most resonant conclusion from any draft
+        8. **WORD COUNT**: Aim for 600-900 words
+        
+        Pay special attention to the specific recommendations in the comparative analysis.
+        
+        Final Story:
         """
-        return self.call_llm(prompt)
+        return self.call_llm(prompt, config.MODELS["final"])
 
     def parse_characters(self, characters_text):
         """Parse character information from LLM response"""
-        # Simple parsing - in a real implementation, you might want more robust parsing
         lines = characters_text.split('\n')
         characters = []
         current_char = {}
@@ -235,22 +295,22 @@ class StoryGeneratorGUI:
     def generate_story_thread(self):
         try:
             # Get user instructions
-            instructions = self.instructions_text.get(1.0, tk.END).strip()
-            self.generator.story_data["user_instructions"] = instructions
+            user_instructions = self.instructions_text.get(1.0, tk.END).strip()
+            self.generator.story_data["user_instructions"] = user_instructions
             
             self.update_status("Generating high-level description...")
-            high_level_desc = self.generator.generate_high_level_description(instructions)
+            high_level_desc = self.generator.generate_high_level_description(user_instructions)
             self.generator.story_data["high_level_description"] = high_level_desc
             self.append_output("=== HIGH LEVEL DESCRIPTION ===\n" + high_level_desc)
             
             self.update_status("Generating characters...")
-            characters_text = self.generator.generate_characters(high_level_desc)
+            characters_text = self.generator.generate_characters(user_instructions, high_level_desc)
             characters = self.generator.parse_characters(characters_text)
             self.generator.story_data["characters"] = characters
             self.append_output("=== CHARACTERS ===\n" + characters_text)
             
             self.update_status("Generating story plan...")
-            story_plan = self.generator.generate_story_plan(high_level_desc, characters)
+            story_plan = self.generator.generate_story_plan(user_instructions, high_level_desc, characters)
             self.generator.story_data["story_plan"] = story_plan
             self.append_output("=== STORY PLAN ===\n" + story_plan)
             
@@ -259,15 +319,21 @@ class StoryGeneratorGUI:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             drafts = loop.run_until_complete(
-                self.generator.generate_drafts_async(self.generator.story_data)
+                self.generator.generate_drafts_async(user_instructions, self.generator.story_data)
             )
             self.generator.story_data["drafts"] = drafts
             
             for i, draft in enumerate(drafts, 1):
                 self.append_output(f"=== DRAFT {i} ({draft['model']}) ===\n" + draft['draft'])
             
-            self.update_status("Generating final story...")
-            final_story = self.generator.generate_final_story(self.generator.story_data)
+            # NEW: Generate comparison analysis
+            self.update_status("Analyzing and comparing drafts...")
+            comparison_analysis = self.generator.generate_draft_comparison(user_instructions, self.generator.story_data)
+            self.generator.story_data["draft_comparison"] = comparison_analysis
+            self.append_output("=== DRAFT COMPARISON ANALYSIS ===\n" + comparison_analysis)
+            
+            self.update_status("Generating final story (with enhanced context)...")
+            final_story = self.generator.generate_final_story(user_instructions, self.generator.story_data, comparison_analysis)
             self.generator.story_data["final"] = final_story
             self.append_output("=== FINAL STORY ===\n" + final_story)
             
@@ -286,6 +352,11 @@ class StoryGeneratorGUI:
             self.start_button.config(state='normal')
 
 def main():
+    # Check if API key is set
+    if config.OPENROUTER_API_KEY == "your-api-key-here":
+        print("ERROR: Please set your OpenRouter API key in config.py")
+        return
+    
     root = tk.Tk()
     app = StoryGeneratorGUI(root)
     root.mainloop()
