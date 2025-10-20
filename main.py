@@ -9,7 +9,7 @@ import config
 
 # Import Gemini if enabled
 if config.USE_GEMINI:
-    import google.generativeai as genai
+    from google import genai
 
 class StoryGenerator:
     def __init__(self):
