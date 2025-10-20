@@ -7,9 +7,8 @@ from openai import OpenAI
 import os
 import config
 
-# Import Gemini if enabled
-if config.USE_GEMINI:
-    from google import genai
+# Import the new Google GenAI library
+from google import genai
 
 class StoryGenerator:
     def __init__(self):
@@ -25,9 +24,8 @@ class StoryGenerator:
 
         # Initialize API clients based on configuration
         if config.USE_GEMINI:
-            # Configure Gemini
-            genai.configure(api_key=config.GEMINI_API_KEY)
-            self.gemini_client = genai
+            # Initialize the new Google GenAI client
+            self.genai_client = genai.Client(api_key=config.GEMINI_API_KEY)
         else:
             # Initialize OpenRouter client
             self.client = OpenAI(
@@ -54,14 +52,17 @@ class StoryGenerator:
             return f"Error: {str(e)}"
 
     def call_gemini(self, prompt, model=None):
-        """Make API call to Gemini"""
+        """Make API call using the new google-genai library"""
         try:
             if model is None:
-                model = config.MODELS.get("high_level", "gemini-pro")
+                # Use the model from config or a default Gemini model
+                model = self.get_model_for_stage("high_level")
             
-            # Use the appropriate Gemini model
-            gemini_model = self.gemini_client.GenerativeModel(model)
-            response = gemini_model.generate_content(prompt)
+            # Use the new client's method to generate content[citation:7]
+            response = self.genai_client.models.generate_content(
+                model=model,
+                contents=prompt
+            )
             return response.text
         except Exception as e:
             return f"Error: {str(e)}"
@@ -69,8 +70,8 @@ class StoryGenerator:
     def get_model_for_stage(self, stage):
         """Get the appropriate model for a given generation stage"""
         if config.USE_GEMINI:
-            # For Gemini, we can use the same model for all stages or configure differently
-            return config.MODELS.get(stage, "gemini-pro")
+            # For Gemini, use the model from config. Default to a recent model like gemini-2.0-flash if not specified.
+            return config.MODELS.get(stage, "gemini-2.0-flash-001")
         else:
             return config.MODELS.get(stage, "anthropic/claude-3-sonnet")
 
@@ -266,6 +267,7 @@ class StoryGenerator:
 
         return characters
 
+# The StoryGeneratorGUI class remains exactly the same as in your original code
 class StoryGeneratorGUI:
     def __init__(self, root):
         self.root = root
@@ -369,7 +371,6 @@ class StoryGeneratorGUI:
             for i, draft in enumerate(drafts, 1):
                 self.append_output(f"=== DRAFT {i} ({draft['model']}) ===\n" + draft['draft'])
 
-            # Generate comparison analysis
             self.update_status("Analyzing and comparing drafts...")
             comparison_analysis = self.generator.generate_draft_comparison(user_instructions, self.generator.story_data)
             self.generator.story_data["draft_comparison"] = comparison_analysis
@@ -399,6 +400,13 @@ def main():
     if config.USE_GEMINI:
         if config.GEMINI_API_KEY == "your-gemini-api-key-here":
             print("ERROR: Please set your Gemini API key in config.py")
+            return
+        # Check if the new library is installed
+        try:
+            from google import genai
+        except ImportError:
+            print("ERROR: The new 'google-genai' library is not installed.")
+            print("Please install it using: pip install google-genai")
             return
     else:
         if config.OPENROUTER_API_KEY == "your-api-key-here":
