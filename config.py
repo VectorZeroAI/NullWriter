@@ -1,10 +1,41 @@
 # config.py
 
-# Insert your OpenRouter API key here
+# mode
+USE_GEMINI = false # set to true if you want to use it.
+
+
+#################
+# GEMINI CONFIG #
+#################
+
+
+
+GEMINI_API_KEY = "your api key here!"
+
+MODELS_GEMINI = {
+					"high_level": "",
+					"characters": "",
+					"story_plan": "",
+					"drafts": [
+																	"",
+																	"",
+																	""
+					],
+					"comparason": "",
+					"final": ""
+
+}
+
+
+#####################
+# OPENROUTER CONFIG #
+#####################
+
+
 OPENROUTER_API_KEY = "your api key here!"
 
 # Model Configuration
-MODELS = {
+MODELS_OPENROUTER = {
     "high_level": "qwen/qwen3-235b-a22b:free",
     "characters": "qwen/qwen3-14b:free", 
     "story_plan": "qwen/qwen3-30b-a3b:free",
@@ -16,6 +47,13 @@ MODELS = {
     "comparison": "google/gemma-3-27b-it:free",
     "final": "arliai/qwq-32b-arliai-rpr-v1:free"
 }
+
+
+
+
+###########
+# GENERAL #
+###########
 
 
 
