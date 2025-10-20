@@ -62,3 +62,5 @@ Then we call the final LLM to finaly create the final story.
 
 
 We wrap it all into a tinkerer GUI with 2 text fields and a start button, and thats it.
+
+(*note that only the final story is displayed in the text field for the displaying. All the other LLM outputs can only be seen in the json.*)
