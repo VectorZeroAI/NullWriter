@@ -9,7 +9,7 @@ you to them for the existanse of free models there,
 they do make my day easier by a lot.
 ---
 
-This brach is made for the prototype1 /idea 1. 
+This brach is made for the prototype 2 / idea 1. 
 
 This idea is to tune the programm into a short story writer.
 
@@ -64,3 +64,10 @@ Then we call the final LLM to finaly create the final story.
 We wrap it all into a tinkerer GUI with 2 text fields and a start button, and thats it.
 
 (*note that only the final story is displayed in the text field for the displaying. All the other LLM outputs can only be seen in the json.*)
+
+
+[p1.1 changes]
+
+in config.py, the option "USE_GEMINI" was added, and if you set it to true, the programm will use the gemini related configurations, including the gemini api key. 
+
+
