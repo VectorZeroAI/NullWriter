@@ -60,3 +60,10 @@ MODELS_OPENROUTER = {
 # Generation Parameters
 MAX_RETRIES = 3
 TIMEOUT = 60
+
+
+
+
+###################### DO NOT TOUCH! ###########
+
+MODELS = MODELS_GEMINI if USE_GEMINI else MODELS_OPENROUTER
