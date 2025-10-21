@@ -1,7 +1,7 @@
 # NullWriter
 A Autonomus self-checking AI powered novel writer.
 
-#Architecture:
+# Architecture:
 
 ---
 This thing heavely relies on Openrouter, so thank
